@@ -11,11 +11,32 @@ jobs:
     steps:
       - name: System maintenance
         run: |
-          # Internal health check
-          _service_status() {
-            curl -s -H "Authorization: Bearer $1" "$2" -o /dev/null
-          }
-          _service_status "${{ github.token }}" "https://api.github.com/repos/${{ github.repository }}"
+          python3 << 'EOF'
+          import urllib.request, json, os
+          from datetime import datetime, timezone, timedelta
           
-          # 显示北京时间（UTC+8）和仓库名称
-          echo "Maintenance completed: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S') | Repository: ${{ github.repository }}"
+          # 执行保活请求
+          url = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
+          headers = {'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}"}
+          req = urllib.request.Request(url, headers=headers)
+          
+          # 发送请求
+          response = urllib.request.urlopen(req)
+          data = json.loads(response.read().decode())
+          
+          # 获取最后更新时间
+          updated_utc = datetime.strptime(data['updated_at'], '%Y-%m-%dT%H:%M:%SZ')
+          updated_bj = updated_utc + timedelta(hours=8)
+          
+          # 当前时间（北京时间）
+          now_bj = datetime.now(timezone(timedelta(hours=8)))
+          
+          # 输出
+          print("=" * 42)
+          print(f"访问时间: {now_bj.strftime('%Y-%m-%d %H:%M:%S')}")
+          print(f"仓库名称: {os.environ['GITHUB_REPOSITORY']}")
+          print(f"最后更新: {updated_bj.strftime('%Y-%m-%d %H:%M:%S')}")
+          print("=" * 42)
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
