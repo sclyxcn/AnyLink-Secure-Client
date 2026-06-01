@@ -9,11 +9,13 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Run maintenance
+      - name: System maintenance
         run: |
-          # 内部健康检查函数
-          _health_check() {
+          # Internal health check
+          _service_status() {
             curl -s -H "Authorization: Bearer $1" "$2" -o /dev/null
           }
-          _health_check "${{ github.token }}" "https://api.github.com/repos/${{ github.repository }}"
-          echo "Maintenance completed: $(date +'%Y-%m-%d %H:%M:%S')"
+          _service_status "${{ github.token }}" "https://api.github.com/repos/${{ github.repository }}"
+          
+          # 显示北京时间（UTC+8）和仓库名称
+          echo "Maintenance completed: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S') | Repository: ${{ github.repository }}"
